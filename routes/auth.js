@@ -3,30 +3,12 @@ const router = express.Router();
 const db = require('../db'); // Import the database connection
 const bcrypt = require('bcrypt');
 
-// Render homepage
-router.get('/', (req, res) => {
-  res.render('index');
-});
-
-// Render login page
-router.get('/login', (req, res) => {
-  res.render('login', { error: null });
-});
-
-// Render register page
-router.get('/register', (req, res) => {
-  res.render('register', { error: null });
-});
-
-// Render post blog page
-router.get('/post_blog', (req, res) => {
-  res.render('post_blog');
-});
-
-// Render read blog page
-router.get('/read_blog', (req, res) => {
-  res.render('read_blog');
-});
+// Render pages
+router.get('/', (req, res) => res.render('index'));
+router.get('/login', (req, res) => res.render('login', { error: null }));
+router.get('/register', (req, res) => res.render('register', { error: null }));
+router.get('/post_blog', (req, res) => res.render('post_blog'));
+router.get('/read_blog', (req, res) => res.render('read_blog'));
 
 // Handle user registration
 router.post('/register', async (req, res) => {
@@ -41,7 +23,6 @@ router.post('/register', async (req, res) => {
       return res.status(400).render('register', { error: 'Passwords do not match.' });
     }
 
-    // Split fullName into first and last names more robustly
     const nameParts = fullName.trim().split(/\s+/);
     const first_name = nameParts.shift();
     const last_name = nameParts.join(' ') || '';
@@ -60,25 +41,52 @@ router.post('/register', async (req, res) => {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Insert user
+      // Insert new user
       db.query(
-        'INSERT INTO username (first_name, last_name, email, password, authen) VALUES (?, ?, ?, ?, ?)',
-        [first_name, last_name, email, hashedPassword, 1],
-        (err2) => {
-          if (err2) {
-            console.error('Error inserting user:', err2);
+        'INSERT INTO username (first_name, last_name, email, password) VALUES (?, ?, ?, ?)',
+        [first_name, last_name, email, hashedPassword],
+        (insertErr, insertResults) => {
+          if (insertErr) {
+            console.error('Insert error:', insertErr);
             return res.status(500).render('register', { error: 'Internal server error.' });
           }
 
-          // Registration successful, redirect to login
           res.redirect('/login');
         }
       );
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
-    res.status(500).render('register', { error: 'Something went wrong.' });
+    console.error('Error in registration:', error);
+    res.status(500).render('register', { error: 'Internal server error.' });
   }
+});
+
+// Handle user login
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  console.log('Login attempt with email:', email);
+
+  if (!email || !password) {
+    return res.status(400).render('login', { error: 'Email and password are required.' });
+  }
+
+  db.query('SELECT * FROM username WHERE email = ?', [email], async (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).render('login', { error: 'Internal server error.' });
+    }
+
+    if (results.length && await bcrypt.compare(password, results[0].password)) {
+
+      req.session.user = results[0].email;
+      console.log('User logged in successfully:', req.session.user);
+      res.redirect('/post_blog');
+      
+    } else {
+      console.log('Invalid login for email:', email);
+      res.status(401).render('login', { error: 'Invalid email or password.' });
+    }
+  });
 });
 
 module.exports = router;

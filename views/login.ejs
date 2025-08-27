@@ -91,7 +91,7 @@
                 </div>
 
                 <!-- Login Form -->
-                <form id="loginForm" class="space-y-6">
+                <form id="loginForm" class="space-y-6" method="post" action="/login">
                     <!-- Email Input -->
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
@@ -366,7 +366,8 @@
             document.getElementById('successModal').classList.add('hidden');
             // Simulate redirect to dashboard
             setTimeout(() => {
-                alert('Redirecting to your dashboard...');
+              //  alert('Redirecting to your dashboard...');
+              loginForm.submit();
             }, 500);
         }
 
