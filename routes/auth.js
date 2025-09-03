@@ -12,20 +12,18 @@ router.get('/read_blog', (req, res) => res.render('read_blog'));
 
 // Handle user registration
 router.post('/register', async (req, res) => {
-  try {
-    const { fullName, email, password, confirmPassword } = req.body;
+  const { fullName, email, password, confirmPassword } = req.body;
+  const [first_name, last_name] = fullName.split(' ');
 
-    if (!fullName || !email || !password || !confirmPassword) {
-      return res.status(400).render('register', { error: 'All fields are required.' });
+    if (!first_name || !last_name || !email || !password || !confirmPassword) {
+      return res.status(400).send('All fields are required.');
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).render('register', { error: 'Passwords do not match.' });
+      return res.status(400).send('Passwords do not match.');
     }
 
-    const nameParts = fullName.trim().split(/\s+/);
-    const first_name = nameParts.shift();
-    const last_name = nameParts.join(' ') || '';
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Check if user already exists
     db.query('SELECT * FROM username WHERE email = ?', [email], async (err, results) => {
@@ -43,22 +41,17 @@ router.post('/register', async (req, res) => {
 
       // Insert new user
       db.query(
-        'INSERT INTO username (first_name, last_name, email, password) VALUES (?, ?, ?, ?)',
-        [first_name, last_name, email, hashedPassword],
-        (insertErr, insertResults) => {
-          if (insertErr) {
-            console.error('Insert error:', insertErr);
-            return res.status(500).render('register', { error: 'Internal server error.' });
+        'INSERT INTO username (first_name, last_name, email, password, is_admin) VALUES (?, ?, ?, ?, ?)',
+        [first_name, last_name, email, hashedPassword, 1], (err, results) => {
+          if (err) {
+            console.error('Error inserting user:', err);
+            return res.status(500).send('Internal server error.');
           }
-
+          console.log('User registered successfully:', results);
           res.redirect('/login');
-        }
-      );
+        });
+
     });
-  } catch (error) {
-    console.error('Error in registration:', error);
-    res.status(500).render('register', { error: 'Internal server error.' });
-  }
 });
 
 // Handle user login
@@ -67,24 +60,27 @@ router.post('/login', async (req, res) => {
   console.log('Login attempt with email:', email);
 
   if (!email || !password) {
-    return res.status(400).render('login', { error: 'Email and password are required.' });
+    return res.status(400).send('Email and password are required.');
   }
 
   db.query('SELECT * FROM username WHERE email = ?', [email], async (err, results) => {
     if (err) {
-      console.error('Database error:', err);
-      return res.status(500).render('login', { error: 'Internal server error.' });
+      console.error('Error fetching user:', err);
+      return res.status(404).send('Invalid email or password.');
     }
 
     if (results.length && await bcrypt.compare(password, results[0].password)) {
 
       req.session.user = results[0].email;
-      console.log('User logged in successfully:', req.session.user);
-      res.redirect('/post_blog');
       
-    } else {
-      console.log('Invalid login for email:', email);
-      res.status(401).render('login', { error: 'Invalid email or password.' });
+      console.log('User logged in successfully:', results[0]);
+      console.log('Session user:', req.session.user);
+      res.redirect('/post_blog');
+
+    } 
+    else {
+      console.log('Invalid email or password for email:', email);
+      res.status(401).send('Invalid email or password.');
     }
   });
 });
