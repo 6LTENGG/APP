@@ -29,6 +29,7 @@ app.use(session({
 
 // Route for authentication
 app.use('/', require('./routes/auth')); // Import and use the auth routes
+app.use('/', require('./routes/blogs')); // Import and use the blog routes
 
 // Start the server
 app.listen(PORT, () => {

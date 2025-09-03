@@ -4,11 +4,21 @@ const db = require('../db'); // Import the database connection
 const bcrypt = require('bcrypt');
 
 // Render pages
-router.get('/', (req, res) => res.render('index'));
-router.get('/login', (req, res) => res.render('login', { error: null }));
-router.get('/register', (req, res) => res.render('register', { error: null }));
-router.get('/post_blog', (req, res) => res.render('post_blog'));
-router.get('/read_blog', (req, res) => res.render('read_blog'));
+router.get('/', (req, res) => {
+  res.render('index', { user: req.session.user });
+});
+router.get('/login', (req, res) => {
+  res.render('login', { error: null, user: req.session.user });
+});
+router.get('/register', (req, res) => {
+  res.render('register', { error: null, user: req.session.user });
+});
+router.get('/post_blog', (req, res) => {
+  res.render('post_blog', { user: req.session.user });
+});
+router.get('/read_blog', (req, res) => {
+  res.render('read_blog', { user: req.session.user });
+});
 
 // Handle user registration
 router.post('/register', async (req, res) => {
@@ -75,7 +85,7 @@ router.post('/login', async (req, res) => {
       
       console.log('User logged in successfully:', results[0]);
       console.log('Session user:', req.session.user);
-      res.redirect('/post_blog');
+      res.redirect('/blogs');
 
     } 
     else {
