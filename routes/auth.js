@@ -41,7 +41,7 @@ router.post('/register', async (req, res) => {
 
       // Insert new user
       db.query(
-        'INSERT INTO username (first_name, last_name, email, password, is_admin) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO username (first_name, last_name, email, password, authen) VALUES (?, ?, ?, ?, ?)',
         [first_name, last_name, email, hashedPassword, 1], (err, results) => {
           if (err) {
             console.error('Error inserting user:', err);
