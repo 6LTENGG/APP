@@ -84,6 +84,7 @@ router.post('/login', async (req, res) => {
       req.session.user = results[0].email;
       
       console.log('User logged in successfully:', results[0]);
+      console.log('Session ID:', req.session.id);
       console.log('Session user:', req.session.user);
       res.redirect('/blogs');
 
@@ -92,6 +93,11 @@ router.post('/login', async (req, res) => {
       console.log('Invalid email or password for email:', email);
       res.status(401).send('Invalid email or password.');
     }
+  });
+});
+router.get('/logout', (req, res) => {
+  req.session.destroy(err => {
+    res.redirect('/login'); // Redirect to homepage after logout
   });
 });
 
